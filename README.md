@@ -22,6 +22,24 @@
    - [Next.js Environment Variables](https://nextjs.org/docs/app/guides/environment-variables)
 4. **TypeScript basics اللي هنحتاجها:** `type`، و`interface`، وoptional properties، وtyping للـ request/response، و`unknown` في معالجة الأخطاء. مش لازم يبقى TypeScript expert، لكن ما يستخدمش `any` لكل حاجة.
 
+### فيديوهات ومراجع لكل جزء (عربي + English + Documentation)
+
+الفيديوهات هنا للتعلّم والفهم، لكن المرجع النهائي في أسماء الـ endpoints والـ fields هو كود Femora نفسه. مش مطلوب يتفرج على كل كورس كامل؛ يشوف الأجزاء المذكورة ويطبّق بعدها مباشرة.
+
+| الموضوع | فيديو عربي | English video | Documentation |
+|---|---|---|---|
+| **Next.js App Router وRouting** | [سلسلة Next.js بالعربي — Korsat X Parmaga](https://www.youtube.com/watch?v=711CfI0ZCwU) | [Next.js full-course videos على YouTube](https://www.youtube.com/results?search_query=Next.js+App+Router+full+course+English) | [Next.js App Router](https://nextjs.org/docs/app) · [Next.js Learn](https://nextjs.org/learn) |
+| **Server vs Client Components** | [شرح Next.js بالعربي — ابحث عن Server/Client Components](https://www.youtube.com/results?search_query=Next.js+Server+Client+Components+شرح+عربي) | [Next.js Server and Client Components — video search](https://www.youtube.com/results?search_query=Next.js+Server+and+Client+Components+tutorial) | [Official guide](https://nextjs.org/docs/app/getting-started/server-and-client-components) |
+| **REST API وHTTP وJSON** | [دورة JSON وFetch وREST API بالعربي — Coder Shiyar](https://www.youtube.com/playlist?list=PLMTdZ61eBnyqzVhegrlKy38Zwzky-eugX) | [REST API for beginners — video](https://www.youtube.com/results?search_query=REST+API+HTTP+JSON+for+beginners) | [MDN HTTP overview](https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview) · [Status codes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status) |
+| **Axios وطلبات الـ API** | [شرح Axios بالعربي — فيديوهات](https://www.youtube.com/results?search_query=Axios+React+شرح+بالعربي) | [Axios tutorial — video](https://www.youtube.com/results?search_query=Axios+tutorial+React+interceptors) | [Axios Getting Started](https://axios-http.com/docs/intro) · [Interceptors](https://axios-http.com/docs/interceptors) |
+| **Authentication وJWT من الفرونت** | [سلسلة Authentication & Authorization بالعربي — Simple Arab Code](https://youtube.com/playlist?list=PLxRKoQzM5m3LmYyem25fvxfwWJZiFqIbf) | [JWT Authentication — Node.js and React, Lama Dev](https://www.youtube.com/watch?v=Yh5Lil03tpI) | [Next.js Authentication guide](https://nextjs.org/docs/app/guides/authentication) · [MDN Authorization header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Authorization) |
+| **JWT + Axios + Interceptors عمليًا** | [شرح JWT وAxios بالعربي — نتائج فيديوهات](https://www.youtube.com/results?search_query=JWT+Axios+React+شرح+بالعربي) | [React Login with JWT, Axios & Interceptors — Dave Gray](https://www.youtube.com/watch?v=nI8PYZNFtac) | [Axios Interceptors](https://axios-http.com/docs/interceptors) · [OWASP HTML5 Security](https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html) |
+| **Forms وValidation** | [React Hook Form بالعربي — فيديوهات](https://www.youtube.com/results?search_query=React+Hook+Form+Zod+شرح+عربي) | [React Hook Form + Zod — freeCodeCamp](https://www.youtube.com/watch?v=JyeWoqWsQFo) | [React Hook Form](https://react-hook-form.com/get-started) · [Zod](https://zod.dev/) |
+| **State وLoading/Error UI** | [شرح React state بالعربي — فيديوهات](https://www.youtube.com/results?search_query=React+useState+useEffect+شرح+عربي) | [React state — video](https://www.youtube.com/results?search_query=React+state+loading+error+API+requests+tutorial) | [React: Managing State](https://react.dev/learn/managing-state) |
+| **اختبار الـ API وDebugging** | [شرح Postman بالعربي — فيديوهات](https://www.youtube.com/results?search_query=Postman+API+testing+شرح+عربي) | [Postman API testing — video](https://www.youtube.com/results?search_query=Postman+API+testing+for+beginners) | [Postman Learning Center](https://learning.postman.com/docs/introduction/overview/) · [Chrome DevTools Network](https://developer.chrome.com/docs/devtools/network/) |
+
+**ترتيب المشاهدة المقترح:** Next.js basics → HTTP/REST → Axios → JWT/Auth → Forms وState → Postman/DevTools. الفيديو العربي يوضّح المفهوم، والفيديو الإنجليزي غالبًا يدي مصطلحات وممارسة إضافية؛ مش مطلوب نسخ مشروع الفيديو لأن الـ backend المستخدم فيه ممكن يختلف عن Femora.
+
 ### المرحلة 2 — فهم الـ HTTP وREST API
 
 قبل المكتبات، لازم يفهم المفاهيم دي: `Request`، `Response`، `HTTP Method`، `URL/Endpoint`، `Headers`، `JSON body`، `Status Code`، `CORS`، وفرق `401 Unauthorized` عن `403 Forbidden`.
@@ -196,6 +214,7 @@ npm install axios # تثبيت Axios داخل مشروع الفرونت إند
 ```ts
 import axios from "axios";
 
+// عنوان الـ API يتغير من .env.local من غير تعديل كل service.
 const baseURL =
   process.env.NEXT_PUBLIC_API_BASE_URL ??
   "https://femora-backend-v3hw.onrender.com/api/v1";
@@ -205,6 +224,7 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+// يضيف JWT تلقائيًا للطلبات المحمية؛ لا يقرر الصلاحيات بنفسه.
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("femora_token");
@@ -213,6 +233,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// نوحّد رسائل الأخطاء بدل تكرار نفس المعالجة في كل component.
 export function getApiError(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const body = error.response?.data as
@@ -330,6 +351,7 @@ export type AuthResult = {
 };
 
 export const authApi = {
+  // كل دالة هنا تمثل عملية Auth واحدة؛ شكل الـ response لازم يطابق الباك إند.
   async signUp(input: { name: string; email: string; password: string }) {
     const { data } = await api.post<AuthResult>("/signup", input);
     if (data.token) localStorage.setItem("femora_token", data.token);
@@ -344,6 +366,7 @@ export const authApi = {
   },
 
   logout() {
+    // ده local logout فقط لو الـ backend ما عندوش endpoint لإبطال JWT.
     localStorage.removeItem("femora_token");
     localStorage.removeItem("femora_user");
   },
