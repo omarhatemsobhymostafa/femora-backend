@@ -86,10 +86,21 @@ const protect = async (req, res, next) => {
             return next(new Error("اليوزر غير مسموح له"));
         }
         req.user = freshUser;
+
+        // Grant access to protected route
        next()
     }catch(err){
         next(err)
     }
 };
 
-module.exports = {signUp , login , protect};
+const restricTo = (...roles)=>{
+    return (req, res, next)=>{
+        if (!roles.includes(req.user.role)){
+            return next(new Error("معندش صلاحية انك تعمل كدا"));
+        }
+        next()
+    }
+}
+
+module.exports = {signUp , login , protect , restricTo};

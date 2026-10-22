@@ -21,9 +21,21 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true
-    },  
+    },
+    activePregnancy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Pregnancy",
+      default: null,
+    },
+
+    activeChild: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Child",
+      default: null,
+    },
+    
     passwordChangedAt: Date
-})
+},{ timestamps: true })
 
 userSchema.methods.correctPassword = async function (candidatePassword, userPassword) {
     return bcrypt.compare(candidatePassword, userPassword)

@@ -9,6 +9,6 @@ router.get('/weeks', weeksController.getAllWeeks);
 router.get('/weeks/:weekNumber', weeksController.getWeekByNumber);
 
 // Update a week based on its number.
-router.patch('/weeks/:weekNumber', authController.protect, weeksController.editWeekByNumber);
+router.patch('/weeks/:weekNumber', authController.protect, authController.restricTo('admin'), weeksController.editWeekByNumber);
 
 module.exports = router;
