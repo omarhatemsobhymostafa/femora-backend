@@ -1,14 +1,18 @@
 
+# Give the workflow a recognizable name in the Actions interface.
 name: Keep Render Alive
 
+# Run periodically, while also allowing a manual run from GitHub Actions.
 on:
   schedule:
     - cron: "*/10 * * * *"
   workflow_dispatch:
 
+# Execute the backend health ping on a GitHub-hosted Linux runner.
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
+      # Request the configured backend root and fail the job for HTTP errors.
       - name: Ping Femora Backend
         run: curl -fsS --max-time 60 "https://YOUR-BACKEND.onrender.com/" -o /dev/null
