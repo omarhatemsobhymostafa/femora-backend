@@ -2,7 +2,102 @@
 
 دليل عملي لربط الـ Frontend بالـ Backend، يشرح الـ flow والـ business logic، ومعاني المصطلحات الإنجليزية المهمة، وأمثلة كود نظيفة عليها تعليقات عند النقاط التي تحتاج توضيحًا فقط. الأمثلة مناسبة لـ **Next.js + React + TypeScript + Axios**.
 
-> **مهم:** عنوان الـ API والمسارات وأسماء الحقول هنا مبنية على عقد الـ API الموثق في الدليل. لو عدّلت الـ backend، راجع الـ routes والـ controllers والـ models، لأن الـ response الحقيقي من الكود هو المرجع النهائي. لا تفترض وجود endpoint غير موجود.
+> **مهم قبل التنفيذ:** ملف README الحالي في الريبو يوثّق `/signup` و`/login` و`/weeks` و`/weeks/:weekNumber` فقط. الدليل يحتوي أيضًا على أمثلة لواجهات الحمل بناءً على سياق المشروع السابق؛ اعتبرها قابلة للاستخدام فقط بعد التأكد من وجودها في `routes/` ومن تطابق الـ request/response مع `controllers/`. لا تعتبر أي endpoint موثّقًا لمجرد وجود مثال له هنا. راجع [README في الريبو](https://github.com/omarhatemsobhymostafa/femora-backend) قبل التنفيذ.
+
+---
+
+
+## 0. مسار التعلّم المقترح لمطوّر React قبل ربط Femora
+
+الشخص اللي هيستلم الشغل فاهم React، فمش محتاج يبدأ كورس React من الصفر. المطلوب يتعلم **Next.js App Router + التعامل مع REST API + JWT authentication من ناحية الفرونت**، وبعدها يطبّق على الـ endpoints الموجودة في Femora. امشوا بالترتيب ده، وما تنتقلوش للمرحلة اللي بعدها غير لما تقدروا تطبقوا المطلوب.
+
+### المرحلة 1 — أساسيات Next.js المهمة
+
+1. **Next.js App Router:** فهم `app/`، وملفات `page.tsx` و`layout.tsx`، والـ nested routes، والتنقل باستخدام `Link` و`useRouter`.
+   - [Next.js App Router — Getting Started](https://nextjs.org/docs/app)
+   - [Next.js Learn — Dashboard App](https://nextjs.org/learn)
+2. **Server Components vs Client Components:** افهم إن الصفحة بتكون Server Component افتراضيًا، وإن `useState` و`useEffect` وevent handlers محتاجة Client Component مع `'use client'`. ما تحطش `'use client'` في كل الملفات تلقائيًا.
+   - [Next.js Server and Client Components](https://nextjs.org/docs/app/getting-started/server-and-client-components)
+3. **Environment Variables:** تعلّم `.env.local` والفرق بين متغيرات السيرفر ومتغيرات `NEXT_PUBLIC_`. عنوان الـ API ممكن يكون public، لكن `JWT_SECRET` و`MONGODB_URI` وأي secrets ممنوع تتكتب في الفرونت.
+   - [Next.js Environment Variables](https://nextjs.org/docs/app/guides/environment-variables)
+4. **TypeScript basics اللي هنحتاجها:** `type`، و`interface`، وoptional properties، وtyping للـ request/response، و`unknown` في معالجة الأخطاء. مش لازم يبقى TypeScript expert، لكن ما يستخدمش `any` لكل حاجة.
+
+### المرحلة 2 — فهم الـ HTTP وREST API
+
+قبل المكتبات، لازم يفهم المفاهيم دي: `Request`، `Response`، `HTTP Method`، `URL/Endpoint`، `Headers`، `JSON body`، `Status Code`، `CORS`، وفرق `401 Unauthorized` عن `403 Forbidden`.
+
+- [MDN — HTTP Overview](https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview)
+- [MDN — Authorization Header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Authorization)
+- [MDN — HTTP Response Status Codes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status)
+- [Axios — Getting Started](https://axios-http.com/docs/intro)
+- [Axios — Interceptors](https://axios-http.com/docs/interceptors)
+
+**تمرين قبل Femora:** ابعت `GET /weeks` من Postman أو Thunder Client، شوف الـ status والـ response، وبعدها نفّذ نفس الطلب بـ Axios داخل صفحة Next.js. كده هيفهم إن Axios مجرد HTTP client؛ مش نظام authentication ولا بديل للباك إند.
+
+### المرحلة 3 — Authentication من ناحية الفرونت فقط
+
+لازم يفرّق بين 3 مصطلحات:
+
+- **Authentication:** التحقق من هوية المستخدم، زي تسجيل الدخول بالإيميل والباسورد.
+- **Session management:** إزاي الواجهة تفتكر إن المستخدم مسجّل دخول بين الصفحات والطلبات.
+- **Authorization:** هل المستخدم عنده صلاحية ينفّذ العملية دي؟ مثال: تعديل بيانات الأسابيع ممكن يكون Admin-only.
+
+مصادر التعلّم بالترتيب:
+
+1. [Next.js — Authentication Guide](https://nextjs.org/docs/app/guides/authentication) — مهم لفهم الـ flow والـ cookies والـ authorization، لكن أمثلته مش معناها إننا هنركّب Auth.js/NextAuth تلقائيًا على Femora.
+2. [Next.js Learn — Adding Authentication](https://nextjs.org/learn/dashboard-app/adding-authentication) — شرح تطبيقي للـ login flow وحماية الصفحات. بعض تفاصيل المثال بتستخدم مكتبة auth مختلفة؛ خُد المفاهيم، وما تنسخش إعداداتها على باك إند Express بتاعنا.
+3. [MDN — Authorization Header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Authorization) — لفهم `Authorization: Bearer <token>`.
+4. [OWASP — Session Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html) — مهم لفهم مخاطر تخزين الـ tokens في المتصفح.
+
+#### الـ Auth المتوافق مع Femora حاليًا
+
+الـ backend الحالي موثّق على إنه بيستخدم `JWT` وبيستقبل التوكن في `Authorization: Bearer <token>`. لذلك، من ناحية الفرونت، الـ flow الأساسي هو:
+
+1. صفحة Signup تبعت `POST /signup` بالحقول اللي الـ controller متوقعها.
+2. صفحة Login تبعت `POST /login` بالإيميل والباسورد.
+3. عند نجاح Login، اقرأ `token` من الـ response حسب شكله الفعلي.
+4. الطلبات المحمية تضيف `Authorization: Bearer ...` عن طريق Axios interceptor أو helper مشتركة.
+5. لو رجع `401`، اعتبر إن التوكن مفقود/غير صالح، وامسح حالة تسجيل الدخول المحلية ووجّه المستخدم لصفحة Login حسب سياسة التطبيق. ما تعملش redirect لكل `403`؛ ده غالبًا معناه إن المستخدم معروف لكن ماعندوش الصلاحية المطلوبة.
+6. عند Logout، امسح التوكن/حالة المستخدم من الواجهة. ده **local logout** فقط لو الباك إند ماعندوش endpoint لإبطال التوكن.
+
+**مهم: ما تركّبش NextAuth/Auth.js أو Clerk أو Better Auth كأنهم متوافقين تلقائيًا مع الباك إند.** دول أنظمة Auth لها آلياتها. إحنا عندنا Express API بيصدر JWT؛ الأفضل للنسخة الحالية إن الفرونت يتعامل مع عقد الـ API مباشرة. لو قررتوا تستخدموا Auth library أو تخزنوا التوكن في `HttpOnly cookie`، ده تغيير في الـ architecture وغالبًا محتاج `Next.js Route Handler / BFF` وتنسيق واضح مع الباك إند، مش مجرد تثبيت package.
+
+#### تخزين الـ token: حل عملي وحل أكثر أمانًا
+
+- **الأبسط للتكامل الحالي:** حفظ التوكن في الذاكرة أثناء جلسة الصفحة، أو استخدام `sessionStorage`/`localStorage` لو قرر الفريق قبول المخاطرة. التخزين في Web Storage سهل، لكنه مكشوف لأي JavaScript خبيث يعمل داخل نفس الـ origin؛ لذلك لا تحفظ كلمة المرور، وقلّل مخاطر XSS.
+- **الأفضل أمنيًا لتطبيق إنتاجي:** `HttpOnly; Secure; SameSite` cookie يديرها السيرفر، أو نمط **Backend for Frontend (BFF)**. ده يحتاج دعمًا في طريقة تمرير الجلسة والتعامل مع CSRF/CORS، فلا تغيّروا التخزين منفردين عن الـ backend.
+- [OWASP — HTML5 Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html) يوضح لماذا لا يُنصح باعتبار `localStorage` مكانًا آمنًا لأسرار المصادقة.
+
+### المرحلة 4 — إدارة البيانات وحالات الواجهة
+
+على مطوّر React إنه يعرف يتعامل مع الحالات الأساسية لكل request:
+
+- `idle`: لسه ما بدأش الطلب.
+- `loading`: الطلب شغال، عطّل زر الإرسال عند الحاجة واعرض loading indicator.
+- `success`: البيانات وصلت؛ اعرضها.
+- `error`: الطلب فشل؛ اعرض رسالة مفهومة بدل ما تسيب الصفحة تنهار.
+- **Empty state:** الطلب نجح لكن مفيش بيانات.
+
+مصدر مناسب: [React — Managing State](https://react.dev/learn/managing-state). وبعدها يطبّق `try/catch`، ويفهم `response.data` في Axios، ويعمل mapping بين response والـ UI من غير ما يغيّر أسماء الحقول اللي الباك إند متوقعها.
+
+### المرحلة 5 — أدوات الـ Debugging والاختبار
+
+- استخدم **Postman** أو **Thunder Client** لاختبار الـ endpoint قبل ربطه بالواجهة.
+- استخدم **Browser DevTools → Network** لمراجعة URL والـ method والـ request payload والـ headers والـ response. ما تصورش أو تشارك الـ JWT أو كلمات المرور.
+- اختبر الحالات السليمة والفاشلة: بيانات صحيحة، كلمة مرور غلط، token مفقود، token غير صالح، سجل مش موجود، وserver بطيء/غير متاح.
+- راجع الـ `routes` و`controllers` و`models` في الريبو لو الـ response الحقيقي اختلف عن الأمثلة. الـ controller هو المرجع لشكل الرد الفعلي، مش نوع TypeScript المكتوب في الفرونت.
+
+### خطة تطبيق قصيرة (5 أيام)
+
+| اليوم | يتعلّم / ينفّذ | النتيجة المطلوبة |
+|---|---|---|
+| 1 | Next.js App Router، pages/layouts، Client Components، env vars | مشروع Next.js منظم ويشتغل |
+| 2 | HTTP، JSON، Axios، status codes | صفحة تجلب `/weeks` وتعرض loading/error/success |
+| 3 | Forms وvalidation و`POST /signup` و`POST /login` | التسجيل والدخول يشتغلان مع الـ API الحقيقي |
+| 4 | JWT، Authorization header، interceptor، protected requests | request محمي ينجح بالتوكن ويفشل من غيره |
+| 5 | ربط بيانات الحمل والأسابيع حسب routes الموجودة، واختبار الحالات الطرفية | تكامل كامل مع توثيق أي endpoint ناقص أو response مختلف |
+
+**معيار التسليم:** المطوّر يقدر يشرح كل request، يعرف الـ payload والـ response، يتعامل مع `401/403/404/500`، وما يخترعش endpoint أو field مش موجود في الباك إند.
 
 ---
 
