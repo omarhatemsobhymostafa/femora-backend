@@ -1,18 +1,19 @@
 # Pregnancy Weeks — دليل ربط الفرونت إند
 
-> دليل عملي يساعدك تبني فرونت إند ويتواصل مع Pregnancy Weeks API.
+> دليل عملي لمطوّر الفرونت إند عشان يربط تطبيق Next.js بـ Pregnancy Weeks API باستخدام Axios.
 
-الريبو ده فيه الباك إند المبني بـ Express وMongoDB بس. استخدم الدليل ده كمرجع للـ API وإزاي تربط الفرونت إند بيه. الأمثلة ماشية حسب سلوك الباك إند الحالي، بما في ده أسماء الحقول والقيود الموجودة.
+الريبو ده فيه الباك إند المبني بـ Express وMongoDB بس. الدليل الأساسي هنا بيشرح ربط تطبيق Next.js باستخدام Axios، والأمثلة ماشية حسب سلوك الـ API الحالي، بما في ده أسماء الحقول والقيود الموجودة.
 
 ## المحتويات
 
 - [نظرة عامة على المشروع](#نظرة-عامة-على-المشروع)
 - [تشغيل الباك إند](#تشغيل-الباك-إند)
 - [ملخص سريع للـ API](#ملخص-سريع-للـ-api)
+- [دليل Next.js مع Axios](#دليل-nextjs-مع-axios)
 - [تسجيل الدخول والتحقق](#تسجيل-الدخول-والتحقق)
 - [بيانات الأسابيع](#بيانات-الأسابيع)
 - [ربط الفرونت إند](#ربط-الفرونت-إند)
-- [تجهيز API client للفرونت إند](#تجهيز-api-client-للفرونت-إند)
+- [أمثلة عامة إضافية للـ API client](#أمثلة-عامة-إضافية-للـ-api-client-اختيارية)
 - [استخدام API client جوه الشاشة](#استخدام-api-client-جوه-الشاشة)
 - [قيود الـ API الحالية](#قيود-الـ-api-الحالية)
 - [اقتراح لتنظيم ملفات الفرونت إند](#اقتراح-لتنظيم-ملفات-الفرونت-إند)
@@ -68,6 +69,363 @@
 | `GET` | `/weeks` | لأ | جلب بيانات كل الأسابيع |
 | `GET` | `/weeks/:weekNumber` | لأ | جلب بيانات أسبوع برقم الأسبوع |
 | `PATCH` | `/weeks/:weekNumber` | مطلوب | تعديل بيانات أسبوع برقم الأسبوع |
+
+## دليل Next.js مع Axios
+
+الجزء ده هو مسار العمل المقترح لو هتعمل الواجهة باستخدام **Next.js App Router وAxios**. الأمثلة بتستخدم TypeScript؛ تقدر تشيل أنواع TypeScript لو مشروعك JavaScript. كل المسارات مبنية على الـ API الموجود حاليًا في الباك إند.
+
+### 1. نزّل Axios في مشروع Next.js
+
+نفّذ الأمر من مجلد مشروع Next.js، مش من مجلد الباك إند:
+
+```bash
+npm install axios
+```
+
+### 2. ظبّط عنوان الباك إند
+
+أنشئ ملف `.env.local` في جذر مشروع Next.js:
+
+```dotenv
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1
+```
+
+شغّل أو أعد تشغيل Next.js بعد تعديل الملف. متغير `NEXT_PUBLIC_` بيتضمّن في كود الفرونت إند اللي بيوصل للمتصفح؛ ينفع تحط فيه عنوان الـ API بس، **ممنوع** تحط فيه `DATABASE_URL` أو `JWT_SECRET` أو أي مفتاح سري.
+
+### 3. اعمل Axios client ودوال الـ API
+
+أنشئ الملف `src/lib/api.ts`. الـ Axios instance هنا بتوحّد `baseURL` وإعدادات JSON. دوال الأسابيع بترجع `response.data` عشان مكونات الواجهة تتعامل مع البيانات مباشرة:
+
+```ts
+import axios from "axios";
+
+const baseURL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  "http://localhost:8080/api/v1";
+
+export const api = axios.create({
+  baseURL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+export type Week = {
+  _id: string;
+  weekNumber: string;
+  babySize?: string;
+  WhappenInBody?: string;
+  sympotyms?: string;
+  babyLooks?: string;
+  option1?: string;
+  option2?: string;
+};
+
+type AuthResponse = {
+  message: string;
+  token: string;
+  user?: User;
+};
+
+export const authApi = {
+  signUp: async (details: {
+    name: string;
+    email: string;
+    password: string;
+  }) => {
+    const response = await api.post<AuthResponse>("/signup", details);
+    return response.data;
+  },
+
+  logIn: async (credentials: { email: string; password: string }) => {
+    const response = await api.post<AuthResponse>("/login", credentials);
+    return response.data;
+  },
+};
+
+export const weeksApi = {
+  getAll: async (signal?: AbortSignal) => {
+    const response = await api.get<Week[]>("/weeks", { signal });
+    return response.data;
+  },
+
+  getByNumber: async (weekNumber: string, signal?: AbortSignal) => {
+    const response = await api.get<Week | null>(
+      `/weeks/${encodeURIComponent(weekNumber)}`,
+      { signal },
+    );
+    return response.data;
+  },
+
+  update: async (
+    weekNumber: string,
+    changes: Partial<Omit<Week, "_id" | "weekNumber">>,
+    token: string,
+  ) => {
+    const response = await api.patch<Week | null>(
+      `/weeks/${encodeURIComponent(weekNumber)}`,
+      changes,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    return response.data;
+  },
+};
+```
+
+**خلي بالك:** `WhappenInBody` و`sympotyms` هما أسماء الحقول الموجودة حاليًا في الباك إند. استخدمهم زي ما هم في الـ requests والـ responses لحد ما يتغير عقد الـ API والداتا.
+
+Axios بيحط الرد في `response.data`؛ عشان كده دوال `authApi` و`weeksApi` بترجع `response.data`. وأي رد HTTP مش من فئة 2xx بيرفض الـ promise، فاستقبل الخطأ بـ `try/catch` في الفورم أو المكون.
+
+### 4. خزن حالة تسجيل الدخول في Client Provider
+
+في Next.js App Router، أي كود بيستخدم React state أو أحداث تفاعلية لازم يكون Client Component. اعمل `src/app/providers.tsx` وخلي الـ JWT في الذاكرة:
+
+```tsx
+"use client";
+
+import { createContext, useContext, useState } from "react";
+import type { ReactNode } from "react";
+import { authApi, type User } from "@/lib/api";
+
+type AuthContextValue = {
+  token: string | null;
+  user: User | null;
+  signUp: (details: {
+    name: string;
+    email: string;
+    password: string;
+  }) => Promise<void>;
+  logIn: (credentials: { email: string; password: string }) => Promise<void>;
+  logOut: () => void;
+};
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+
+  async function signUp(details: {
+    name: string;
+    email: string;
+    password: string;
+  }) {
+    const result = await authApi.signUp(details);
+    setToken(result.token);
+    setUser(result.user ?? null);
+  }
+
+  async function logIn(credentials: { email: string; password: string }) {
+    const result = await authApi.logIn(credentials);
+    setToken(result.token);
+    setUser(null);
+  }
+
+  function logOut() {
+    setToken(null);
+    setUser(null);
+  }
+
+  return (
+    <AuthContext.Provider
+      value={{ token, user, signUp, logIn, logOut }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth لازم يتستخدم جوه AuthProvider");
+  }
+  return context;
+}
+```
+
+لفّ التطبيق بالـ provider من `src/app/layout.tsx`. الـ layout نفسه يفضل Server Component عادي؛ الـ provider هو Client Component:
+
+```tsx
+import type { ReactNode } from "react";
+import { AuthProvider } from "./providers";
+
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="ar" dir="rtl">
+      <body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+في المثال ده، الـ token بيتخزن في الذاكرة وبيتمسح مع reload الصفحة. لو قررت تحفظه في browser storage عشان يفضل موجود بعد reload، خليك عارف إن JavaScript يقدر يقرأ التخزين ده؛ ماتخزنش فيه الباسورد أو أسرار السيرفر، واهتم بحماية التطبيق من XSS. مافيش endpoint لتسجيل الخروج أو لتجديد التوكن في الباك إند.
+
+### 5. اعمل فورم تسجيل دخول
+
+صفحات الفورم لازم تكون Client Components عشان تستخدم state وتستجيب لحدث submit. المثال ده مكانه `src/app/login/page.tsx`:
+
+```tsx
+"use client";
+
+import { useState } from "react";
+import type { FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import { useAuth } from "../providers";
+
+function getErrorMessage(error: unknown) {
+  if (axios.isAxiosError(error)) {
+    const message = error.response?.data?.message;
+    if (typeof message === "string") return message;
+    if (!error.response) {
+      return "مش قادرين نوصل للسيرفر. راجع عنوان الـ API والاتصال.";
+    }
+    return `فشل الطلب (${error.response.status}). حاول تاني.`;
+  }
+  return error instanceof Error ? error.message : "حصل خطأ غير متوقع.";
+}
+
+export default function LoginPage() {
+  const router = useRouter();
+  const { logIn } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setSubmitting(true);
+
+    try {
+      await logIn({ email, password });
+      router.push("/weeks");
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <label>
+        الإيميل
+        <input
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          required
+        />
+      </label>
+
+      <label>
+        الباسورد
+        <input
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          required
+        />
+      </label>
+
+      {error && <p role="alert">{error}</p>}
+
+      <button type="submit" disabled={submitting}>
+        {submitting ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
+      </button>
+    </form>
+  );
+}
+```
+
+فورم إنشاء الحساب نفس الفكرة، بس استخدم `signUp({ name, email, password })`، وخلي الباسورد 8 حروف على الأقل عشان يطابق تحقق الباك إند.
+
+### 6. اعرض الأسابيع باستخدام Axios في Next.js
+
+الصفحة دي Client Component لأنها بتعمل request من المتصفح وبتستخدم state. حطها في `src/app/weeks/page.tsx`:
+
+```tsx
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { weeksApi, type Week } from "@/lib/api";
+
+export default function WeeksPage() {
+  const [weeks, setWeeks] = useState<Week[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    weeksApi
+      .getAll(controller.signal)
+      .then(setWeeks)
+      .catch((requestError: unknown) => {
+        if (!controller.signal.aborted) {
+          setError(
+            requestError instanceof Error
+              ? requestError.message
+              : "مش قادرين نحمّل الأسابيع.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+
+    return () => controller.abort();
+  }, []);
+
+  if (loading) return <p role="status">جاري تحميل الأسابيع...</p>;
+  if (error) return <p role="alert">{error}</p>;
+  if (weeks.length === 0) return <p>مفيش أسابيع متاحة حاليًا.</p>;
+
+  return (
+    <ul>
+      {weeks.map((week) => (
+        <li key={week._id}>
+          <Link href={`/weeks/${encodeURIComponent(week.weekNumber)}`}>
+            الأسبوع {week.weekNumber}: {week.babySize}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+لو عايز صفحة تفاصيل أسبوع، نادِ `weeksApi.getByNumber(weekNumber, signal)`؛ خليك مستعد إن النتيجة تكون `null` لو الأسبوع مش موجود. وللتعديل، استخدم `weeksApi.update(weekNumber, changes, token)` من Client Component، وابعت token المستخدم الحالي. الـ GET متاح من غير تسجيل دخول، لكن PATCH محتاج Bearer token.
+
+### إيه اللي يحصل لما request يفشل؟
+
+- Axios بيرفض الـ promise مع ردود HTTP اللي مش 2xx؛ استخدم `try/catch` واعرض حالة الخطأ للمستخدم.
+- لو `error.response` موجود، تقدر تقرأ HTTP status والـ body من `error.response.status` و`error.response.data`.
+- لو `error.response` مش موجودة، غالبًا المشكلة اتصال أو CORS أو عنوان API غلط.
+- ردود الأخطاء في الباك إند مش موحّدة، فماتعتمدش إن كل رد فيه `message`.
+- لو فشل request محمي، امسح token من حالة تسجيل الدخول ووجّه المستخدم لصفحة الدخول حسب تدفق تطبيقك.
+
+### ملاحظة عن Next.js وCORS
+
+Next.js مش بيعدّي طلبات المتصفح للباك إند تلقائيًا. لو الفرونت إند شغال على origin مختلف عن `http://localhost:8080`، المتصفح هيحتاج إن الباك إند يسمح بـ origin بتاع Next.js عن طريق CORS، أو إنك تعمل proxy مضبوط. إعداد proxy لا يغيّر الـ API contract؛ استخدم المسارات `/api/v1/...` كما هي أو ظبّط إعادة التوجيه لتوصلها للباك إند.
+
+كمان Next.js بيشغّل Server Components على السيرفر. الأمثلة هنا بتستخدم Axios من Client Components، عشان التوكن موجود في حالة تسجيل الدخول بالمتصفح. ماتستوردش Client Provider أو كود بيعتمد على `window` أو تخزين المتصفح داخل Server Component.
 
 ### إنشاء حساب
 
@@ -238,19 +596,19 @@ async function request(path, { token, ...options } = {}) {
 
 لو الباك إند اعتمد بعد كده شكل JSON ثابت للأخطاء، عدّل طريقة قراءة الخطأ على أساسه. ماتعتبرش إن كل رد خطأ لازم يكون JSON.
 
-### تجهيز API client للفرونت إند
+### أمثلة عامة إضافية للـ API client (اختيارية)
 
-الـ API client عبارة عن module صغير مشترك، بيبقى عارف العنوان الأساسي للباك إند، وإزاي يبعت JSON، وإزاي يضيف بيانات تسجيل الدخول، وإزاي يوضح فشل الطلب. خليك حاطط المنطق ده في مكان واحد بدل ما تكرر إعداد `fetch` أو `axios` في كل شاشة. اختار `fetch` أو Axios؛ الأمثلة اللي جاية بدائل لبعض ومش مطلوب تستخدمهم مع بعض.
+القسم الأساسي اللي محتاجه مطوّر Next.js هو [دليل Next.js مع Axios](#دليل-nextjs-مع-axios) اللي فوق. الأمثلة هنا مرجع عام إضافي؛ مش محتاج تنفذ `fetch` وAxios مع بعض. خليك حاطط إعدادات العميل ودوال الـ API في module مشترك بدل ما تكررها في كل شاشة.
 
 #### إعداد عنوان الـ API
 
-لو الفرونت إند معمول بـ Vite، حدد العنوان في ملف `.env` بتاع مشروع الفرونت إند:
+في Next.js، حدد العنوان في ملف `.env.local` بتاع مشروع الفرونت إند:
 
 ```dotenv
-VITE_API_BASE_URL=http://localhost:8080/api/v1
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1
 ```
 
-Vite بيعرض المتغيرات اللي بتبدأ بـ `VITE_` لكود المتصفح، عشان كده ماتحطش فيها أسرار. بعد ما تغيّر `.env` اعمل restart لسيرفر الفرونت إند. باقي الـ frameworks ممكن تستخدم أسماء مختلفة؛ اتبع طريقة المتغيرات العامة الخاصة بالـ framework بتاعك. لو الفرونت إند والباك إند على نفس الـ origin، ممكن تستخدم عنوان API نسبي بشرط إن web server أو development proxy يوجّه `/api` للباك إند.
+Next.js بيعرض المتغيرات اللي بتبدأ بـ `NEXT_PUBLIC_` لكود المتصفح، عشان كده ماتحطش فيها أسرار. بعد ما تغيّر `.env.local` اعمل restart لسيرفر الفرونت إند. لو الفرونت إند والباك إند على نفس الـ origin، ممكن تستخدم عنوان API نسبي بشرط إن web server أو development proxy يوجّه `/api` للباك إند.
 
 #### الاختيار الأول: `fetch` (موجود جاهز في المتصفحات)
 
@@ -258,7 +616,7 @@ Vite بيعرض المتغيرات اللي بتبدأ بـ `VITE_` لكود ا�
 
 ```js
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080/api/v1";
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1";
 
 async function request(path, { token, body, headers, ...options } = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -339,7 +697,7 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL:
-    import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080/api/v1",
+    process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1",
   headers: {
     "Content-Type": "application/json",
   },
@@ -397,7 +755,7 @@ api.interceptors.request.use((config) => {
 
 ### خطوات تسجيل الدخول كاملة باستخدام Axios
 
-مثال React context اللي جاي بيحتفظ بالـ JWT في الذاكرة وبيوفر وظائف إنشاء الحساب وتسجيل الدخول والخروج لباقي التطبيق. المثال بيشتغل مع `authApi` بتاع Axios اللي فوق. حطه في ملف بالفرونت إند زي `src/auth/AuthContext.jsx` وعدّل مسارات الـ imports حسب مشروعك.
+المثال ده React عام. لو مشروعك Next.js، استخدم الـ provider الموجود في [دليل Next.js مع Axios](#دليل-nextjs-مع-axios) لأنه متجهز مع App Router. المثال العام بيحتفظ بالـ JWT في الذاكرة وبيوفر وظائف إنشاء الحساب وتسجيل الدخول والخروج لباقي التطبيق.
 
 ```jsx
 import { createContext, useContext, useState } from "react";
@@ -442,7 +800,7 @@ export function useAuth() {
 }
 ```
 
-لفّ التطبيق كله (أو المسارات اللي محتاجة تسجيل دخول) بالـ provider:
+في تطبيق React عادي لفّ التطبيق كله (أو المسارات اللي محتاجة تسجيل دخول) بالـ provider. في Next.js استخدم ملف `layout.tsx` زي المثال الموجود فوق بدل `root.render`:
 
 ```jsx
 import { AuthProvider } from "./auth/AuthContext";
@@ -633,13 +991,13 @@ const updatedWeek = await weeksApi.update(
 
 ```text
 src/
-  api/          # عنوان الـ API الأساسي وrequest helper ودوال الـ endpoints
+  lib/          # Axios client ودوال الـ endpoints
   components/   # عناصر واجهة مشتركة زي الفورم وحالات التحميل والأخطاء
   features/
     auth/       # شاشات وحالة إنشاء الحساب وتسجيل الدخول
     weeks/      # عرض الأسابيع وتفاصيلها وتعديلها
   types/        # أنواع مشتركة لطلبات وردود الـ API
-  app/          # المسارات والإعدادات العامة للتطبيق
+  app/          # صفحات Next.js وlayout.tsx وproviders.tsx
 ```
 
 على قد ما تقدر، خلي استدعاءات الـ API برّه components العرض. عرّف أنواع بيانات الـ API بنفس أسماء الحقول اللي بترجع من السيرفر، واعرض labels واضحة وحالات ظاهرة للتحميل والتحقق وفشل الطلبات.
