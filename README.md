@@ -31,33 +31,6 @@
 
 كود الباك إند متقسم لمجلدات [`controllers/`](./controllers/) و[`models/`](./models/) و[`routes/`](./routes/). الريبو لسه مافيهوش framework أو ملفات خاصة بالفرونت إند، ومفيهوش اختبارات للفرونت إند.
 
-## تشغيل الباك إند
-
-1. نزّل إصدار مناسب من Node.js واتأكد إن MongoDB شغالة ومتاحة.
-2. من جوه مجلد `backend/`، نزّل الحزم المطلوبة:
-
-   ```bash
-   npm install
-   ```
-
-3. جهّز ملف `backend/.env` على جهازك بالقيم دي:
-
-   ```dotenv
-   DATABASE_URL=<your-mongodb-connection-string>
-   JWT_SECRET=<a-long-random-secret>
-   JWT_EXPIRES_IN=<jsonwebtoken-duration>
-   PORT=8080
-   ```
-
-   قيمة `PORT` اختيارية؛ السيرفر بيستخدم `8080` لو ماحددتش غيره. ماتعملش commit لبيانات الدخول أو المفاتيح السرية الحقيقية.
-
-4. شغّل سيرفر التطوير من مجلد `backend/`:
-
-   ```bash
-   npm run dev
-   ```
-
-السيرفر بيتصل بـ MongoDB قبل ما يبدأ يستقبل requests. لو الاتصال بالداتابيز فشل، السيرفر هيقف.
 
 ## ملخص سريع للـ API
 
