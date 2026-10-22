@@ -24,7 +24,8 @@
 | --- | --- |
 | الباك إند | Node.js وExpress وMongoose |
 | بداية مسارات الـ API | `/api/v1` |
-| عنوان الـ API المحلي الافتراضي | `http://localhost:8080` |
+| رابط الباك إند الحالي على Render | `https://femora-backend-v3hw.onrender.com` |
+| رابط الباك إند المحلي | `http://localhost:8080` |
 | تسجيل الدخول والتحقق | JSON Web Token (JWT)، بيتبعت كـ Bearer token |
 | البيانات | حسابات المستخدمين ومستندات أسابيع الحمل في MongoDB |
 
@@ -60,7 +61,7 @@
 
 ## ملخص سريع للـ API
 
-كل المسارات اللي تحت دي بتبدأ من `http://localhost:8080/api/v1` في بيئة التطوير المحلية. أي request فيه body لازم يتبعت كـ JSON ومعاه `Content-Type: application/json`.
+كل المسارات اللي تحت دي بتبدأ من `https://femora-backend-v3hw.onrender.com/api/v1` على Render. للتطوير المحلي، استخدم `http://localhost:8080/api/v1`. أي request فيه body لازم يتبعت كـ JSON ومعاه `Content-Type: application/json`.
 
 | الطريقة | المسار | محتاج تسجيل دخول؟ | الاستخدام |
 | --- | --- | --- | --- |
@@ -87,10 +88,10 @@ npm install axios
 أنشئ ملف `.env.local` في جذر مشروع Next.js:
 
 ```dotenv
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1
+NEXT_PUBLIC_API_BASE_URL=https://femora-backend-v3hw.onrender.com/api/v1
 ```
 
-شغّل أو أعد تشغيل Next.js بعد تعديل الملف. متغير `NEXT_PUBLIC_` بيتضمّن في كود الفرونت إند اللي بيوصل للمتصفح؛ ينفع تحط فيه عنوان الـ API بس، **ممنوع** تحط فيه `DATABASE_URL` أو `JWT_SECRET` أو أي مفتاح سري.
+شغّل أو أعد تشغيل Next.js بعد تعديل الملف. متغير `NEXT_PUBLIC_` بيتضمّن في كود الفرونت إند اللي بيوصل للمتصفح؛ ينفع تحط فيه عنوان الـ API بس، **ممنوع** تحط فيه `DATABASE_URL` أو `JWT_SECRET` أو أي مفتاح سري. لو بتشغّل الباك إند محليًا، غيّر القيمة لـ `http://localhost:8080/api/v1`.
 
 ### 3. اعمل Axios client ودوال الـ API
 
@@ -101,7 +102,7 @@ import axios from "axios";
 
 const baseURL =
   process.env.NEXT_PUBLIC_API_BASE_URL ??
-  "http://localhost:8080/api/v1";
+  "https://femora-backend-v3hw.onrender.com/api/v1";
 
 export const api = axios.create({
   baseURL,
@@ -423,7 +424,7 @@ export default function WeeksPage() {
 
 ### ملاحظة عن Next.js وCORS
 
-Next.js مش بيعدّي طلبات المتصفح للباك إند تلقائيًا. لو الفرونت إند شغال على origin مختلف عن `http://localhost:8080`، المتصفح هيحتاج إن الباك إند يسمح بـ origin بتاع Next.js عن طريق CORS، أو إنك تعمل proxy مضبوط. إعداد proxy لا يغيّر الـ API contract؛ استخدم المسارات `/api/v1/...` كما هي أو ظبّط إعادة التوجيه لتوصلها للباك إند.
+Next.js مش بيعدّي طلبات المتصفح للباك إند تلقائيًا. لو الفرونت إند شغال على origin مختلف عن الباك إند (على Render أو محليًا)، المتصفح هيحتاج إن الباك إند يسمح بـ origin بتاع Next.js عن طريق CORS، أو إنك تعمل proxy مضبوط. إعداد proxy لا يغيّر الـ API contract؛ استخدم المسارات `/api/v1/...` كما هي أو ظبّط إعادة التوجيه لتوصلها للباك إند.
 
 كمان Next.js بيشغّل Server Components على السيرفر. الأمثلة هنا بتستخدم Axios من Client Components، عشان التوكن موجود في حالة تسجيل الدخول بالمتصفح. ماتستوردش Client Provider أو كود بيعتمد على `window` أو تخزين المتصفح داخل Server Component.
 
@@ -565,7 +566,7 @@ Content-Type: application/json
 ماتكررش عنوان الباك إند في كذا component. استخدم طريقة حفظ متغيرات البيئة الخاصة بالـ framework بتاع الفرونت إند، وحدد عنوان أساسي واحد للـ API، زي المثال ده:
 
 ```text
-http://localhost:8080/api/v1
+https://femora-backend-v3hw.onrender.com/api/v1
 ```
 
 وقت النشر، حط عنوان منفصل لبيئة production. ماتحطش بيانات دخول الداتابيز أو سر توقيع JWT في إعدادات الفرونت إند؛ أي قيمة بتوصل لكود المتصفح ممكن المستخدم يشوفها.
@@ -605,7 +606,7 @@ async function request(path, { token, ...options } = {}) {
 في Next.js، حدد العنوان في ملف `.env.local` بتاع مشروع الفرونت إند:
 
 ```dotenv
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1
+NEXT_PUBLIC_API_BASE_URL=https://femora-backend-v3hw.onrender.com/api/v1
 ```
 
 Next.js بيعرض المتغيرات اللي بتبدأ بـ `NEXT_PUBLIC_` لكود المتصفح، عشان كده ماتحطش فيها أسرار. بعد ما تغيّر `.env.local` اعمل restart لسيرفر الفرونت إند. لو الفرونت إند والباك إند على نفس الـ origin، ممكن تستخدم عنوان API نسبي بشرط إن web server أو development proxy يوجّه `/api` للباك إند.
@@ -616,7 +617,8 @@ Next.js بيعرض المتغيرات اللي بتبدأ بـ `NEXT_PUBLIC_` ل
 
 ```js
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1";
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  "https://femora-backend-v3hw.onrender.com/api/v1";
 
 async function request(path, { token, body, headers, ...options } = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -697,7 +699,8 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL:
-    process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api/v1",
+    process.env.NEXT_PUBLIC_API_BASE_URL ??
+      "https://femora-backend-v3hw.onrender.com/api/v1",
   headers: {
     "Content-Type": "application/json",
   },
