@@ -2,10 +2,11 @@ const express = require("express");
 const weekRoutes = require("./routes/weekRoutes");
 const userRoutes = require("./routes/userRoutes");
 const pregnancyRoutes = require("./routes/pregnancyRoutes");
+const cors = require("cors");
 
 // Create the application instance that server.js will start.
 const app = express();
-
+app.use(cors());
 // Parse JSON bodies so route handlers can read request data from req.body.
 app.use(express.json());
 
