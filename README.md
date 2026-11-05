@@ -2,7 +2,13 @@
 
 دليل عملي لربط الـ Frontend بالـ Backend، يشرح الـ flow والـ business logic، ومعاني المصطلحات الإنجليزية المهمة، وأمثلة كود نظيفة عليها تعليقات عند النقاط التي تحتاج توضيحًا فقط. الأمثلة مناسبة لـ **Next.js + React + TypeScript + Axios**.
 
-> **مهم قبل التنفيذ:** ملف README الحالي في الريبو يوثّق `/signup` و`/login` و`/weeks` و`/weeks/:weekNumber` فقط. الدليل يحتوي أيضًا على أمثلة لواجهات الحمل بناءً على سياق المشروع السابق؛ اعتبرها قابلة للاستخدام فقط بعد التأكد من وجودها في `routes/` ومن تطابق الـ request/response مع `controllers/`. لا تعتبر أي endpoint موثّقًا لمجرد وجود مثال له هنا. راجع [README في الريبو](https://github.com/omarhatemsobhymostafa/femora-backend) قبل التنفيذ.
+> **مهم قبل التنفيذ:** هذا الدليل يشرح الـ flow والـ business logic، لكن كود `routes/` و`controllers/` هو المرجع النهائي لأي endpoint أو response.
+
+### إعداد تسجيل الدخول بجوجل
+
+اضبط `GOOGLE_CLIENT_ID` في بيئة تشغيل الباك إند، واضبط نفس OAuth web client ID في الفرونت كـ `NEXT_PUBLIC_GOOGLE_CLIENT_ID`. أضف نطاقات الفرونت (محلي والإنتاج) إلى Authorized JavaScript origins في Google Cloud Console. يتحقق الباك إند من Google ID token ثم يصدر JWT الخاص بـ Femora؛ حسابات Google لا تحتاج إلى كلمة مرور.
+
+المسار العام هو `POST /api/v1/google`، ويستقبل JSON يحتوي على `credential` من Google Identity Services، ويرجع `token` و`user` مثل `/api/v1/login`.
 
 ---
 
@@ -73,7 +79,8 @@
 
 1. صفحة Signup تبعت `POST /signup` بالحقول اللي الـ controller متوقعها.
 2. صفحة Login تبعت `POST /login` بالإيميل والباسورد.
-3. عند نجاح Login، اقرأ `token` من الـ response حسب شكله الفعلي.
+   - أو يبدأ المستخدم بتسجيل Google عبر Google Identity Services؛ يرسل الفرونت الـ ID token إلى `POST /google` في `credential`، ويتحقق الباك إند منه ثم يصدر JWT الخاص بـ Femora.
+3. عند نجاح تسجيل الدخول بأي طريقة، اقرأ `token` و`user` من الـ response.
 4. الطلبات المحمية تضيف `Authorization: Bearer ...` عن طريق Axios interceptor أو helper مشتركة.
 5. لو رجع `401`، اعتبر إن التوكن مفقود/غير صالح، وامسح حالة تسجيل الدخول المحلية ووجّه المستخدم لصفحة Login حسب سياسة التطبيق. ما تعملش redirect لكل `403`؛ ده غالبًا معناه إن المستخدم معروف لكن ماعندوش الصلاحية المطلوبة.
 6. عند Logout، امسح التوكن/حالة المستخدم من الواجهة. ده **local logout** فقط لو الباك إند ماعندوش endpoint لإبطال التوكن.
@@ -188,6 +195,8 @@ NEXT_PUBLIC_API_BASE_URL=https://femora-backend-v3hw.onrender.com/api/v1
 |---|---|---:|---|
 | `POST` | `/signup` | لا | إنشاء حساب |
 | `POST` | `/login` | لا | تسجيل الدخول |
+| `POST` | `/google` | لا | تسجيل الدخول أو التسجيل باستخدام Google |
+| `GET` | `/me` | نعم | جلب المستخدم الحالي |
 | `GET` | `/weeks` | لا | جلب كل الأسابيع |
 | `GET` | `/weeks/:weekNumber` | لا | جلب أسبوع محدد |
 | `PATCH` | `/weeks/:weekNumber` | نعم، admin | تعديل بيانات أسبوع |
@@ -197,7 +206,7 @@ NEXT_PUBLIC_API_BASE_URL=https://femora-backend-v3hw.onrender.com/api/v1
 
 `/weeks/:weekNumber` فيه جزء متغير. لما تطلب الأسبوع 12، الرابط الفعلي يكون `/weeks/12` وليس `/weeks/:weekNumber`.
 
-لا يوجد في المسارات المذكورة endpoint لـ `/logout` أو `/refresh-token` أو `/me` أو CRUD للأطفال. لا تنشئ calls للمسارات دي إلا لو أضفتها للباك إند.
+لا يوجد في المسارات المذكورة endpoint لـ `/logout` أو `/refresh-token` أو CRUD للأطفال. لا تنشئ calls للمسارات دي إلا لو أضفتها للباك إند.
 
 ---
 
@@ -331,7 +340,36 @@ Body:
 }
 ```
 
-الـ backend يبحث عن الحساب ويتحقق من كلمة المرور. لو صحيحة يرجع token؛ لو غلط يرجع error. حسب عقد الـ API الحالي في هذا الدليل، `/login` يرجع `message` و`token`، ولا تعتمد على `data.user` إلا لو الـ backend رجّعها فعلًا.
+الـ backend يبحث عن الحساب ويتحقق من كلمة المرور. لو صحيحة يرجع `message` و`token` و`user` (بما فيها `id` و`name` و`email` و`role`)؛ لو غلط يرجع error.
+
+### تسجيل الدخول بجوجل `POST /google`
+
+بعد اختيار المستخدم لحسابه عبر Google Identity Services، يرسل الفرونت الـ ID token الذي استلمه في الحقل `credential`:
+
+```json
+{
+  "credential": "<google-id-token>"
+}
+```
+
+يتحقق الباك إند من توقيع الـ token و`audience` مقابل `GOOGLE_CLIENT_ID`، ويشترط أن يكون البريد الإلكتروني موثّقًا. بعد ذلك يبحث عن المستخدم باستخدام معرّف Google أو البريد، وينشئ حسابًا جديدًا عند عدم وجوده. الحسابات التي تستخدم Google فقط لا تتطلب `password`، بينما تظل كلمة المرور مطلوبة للحسابات العادية. إذا وُجد حساب بالبريد نفسه وكان غير مربوط بمعرّف Google آخر، يربط الباك إند الحسابين. استخدم JWT الخاص بـ Femora الذي يرجعه endpoint للطلبات المحمية، وليس Google ID token.
+
+الاستجابة الناجحة بنفس صيغة تسجيل الدخول العادي:
+
+```json
+{
+  "message": "تسجيل الدخول بجوجل تم بنجاح",
+  "token": "<femora-jwt>",
+  "user": {
+    "id": "<user-id>",
+    "name": "Sara",
+    "email": "sara@example.com",
+    "role": "mom"
+  }
+}
+```
+
+يتطلب هذا المسار ضبط `GOOGLE_CLIENT_ID` و`JWT_SECRET` في بيئة الباك إند. استخدم نفس Google OAuth Web Client ID في إعداد الفرونت باسم `NEXT_PUBLIC_GOOGLE_CLIENT_ID`، وأضف origins الخاصة بالفرونت إلى إعداد Authorized JavaScript origins في Google Cloud Console. لا تضع `JWT_SECRET` أو أي client secret في متغير `NEXT_PUBLIC_`.
 
 ### 4.3 ملف خدمة المصادقة `src/lib/auth-api.ts`
 
@@ -342,12 +380,13 @@ export type User = {
   id: string;
   name: string;
   email: string;
+  role: "mom" | "doctor" | "admin";
 };
 
 export type AuthResult = {
   message: string;
   token: string;
-  user?: User;
+  user: User;
 };
 
 export const authApi = {
@@ -361,6 +400,12 @@ export const authApi = {
 
   async login(input: { email: string; password: string }) {
     const { data } = await api.post<AuthResult>("/login", input);
+    if (data.token) localStorage.setItem("femora_token", data.token);
+    return data;
+  },
+
+  async loginWithGoogle(credential: string) {
+    const { data } = await api.post<AuthResult>("/google", { credential });
     if (data.token) localStorage.setItem("femora_token", data.token);
     return data;
   },
@@ -853,6 +898,16 @@ curl -X POST "https://femora-backend-v3hw.onrender.com/api/v1/login" -H "Content
 
 استخدم حساب اختبار تملكه. لا تضع كلمة مرورك الحقيقية في سجل عام أو لقطة شاشة.
 
+### اختبار تسجيل الدخول بجوجل
+
+استبدل `<google-id-token>` بـ ID token صالح تم الحصول عليه من Google Identity Services:
+
+```bash
+curl -X POST "https://femora-backend-v3hw.onrender.com/api/v1/google" -H "Content-Type: application/json" -d "{\"credential\":\"<google-id-token>\"}"
+```
+
+الاستجابة تحتوي على JWT الخاص بـ Femora؛ استخدم هذا الـ JWT في `Authorization` للطلبات المحمية، وليس Google ID token.
+
 ### اختبار endpoint محمي
 
 بعد الحصول على JWT من login:
@@ -941,6 +996,8 @@ src/
 - [ ] `NEXT_PUBLIC_API_BASE_URL` صحيح وتمت إعادة تشغيل dev server بعد تغييره.
 - [ ] التسجيل يرسل `name`, `email`, `password`.
 - [ ] تسجيل الدخول يرسل `email`, `password`.
+- [ ] تسجيل الدخول بجوجل يرسل Google ID token في `credential` إلى `POST /google`.
+- [ ] `GOOGLE_CLIENT_ID` مضبوط في الباك إند، و`NEXT_PUBLIC_GOOGLE_CLIENT_ID` مضبوط في الفرونت بنفس Web Client ID.
 - [ ] الـ token يتم حفظه بعد نجاح العملية فقط.
 - [ ] الطلبات المحمية ترسل `Authorization: Bearer <token>`.
 - [ ] لا يتم إرسال token في URL.
@@ -956,7 +1013,7 @@ src/
 ## الخلاصة
 
 - `api.ts`: عنوان السيرفر، إعداد Axios، إضافة JWT، ومعالجة أخطاء عامة.
-- `auth-api.ts`: signup/login/logout من جهة الفرونت.
+- `auth-api.ts`: signup/login/Google login/logout من جهة الفرونت.
 - `pregnancy-api.ts`: إنشاء الحمل وجلبه وتحديثه.
 - `weeks-api.ts`: قراءة الأسابيع وتعديلها.
 - الـ component يستدعي service وينتظر النتيجة ثم يحدّث state.

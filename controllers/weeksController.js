@@ -5,7 +5,21 @@ const weeksModel = require('../models/weeksModel');
 const getAllWeeks =  async (req , res)=>{
     // Use lean results because this endpoint only reads and returns the documents.
     const weeksData = await weeksModel.find().lean();
-    res.json(weeksData)
+    const uniqueWeeks = new Map();
+
+    for (const week of weeksData) {
+        if (week.weekNumber && !uniqueWeeks.has(week.weekNumber)) {
+            uniqueWeeks.set(week.weekNumber, week);
+        }
+    }
+
+    res.json(
+        [...uniqueWeeks.values()].sort(
+            (first, second) =>
+                Number(first.weekNumber.replace('week_', '')) -
+                Number(second.weekNumber.replace('week_', ''))
+        )
+    );
 }
 
 // Find one week using the number supplied in the URL.

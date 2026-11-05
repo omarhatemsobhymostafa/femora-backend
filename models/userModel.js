@@ -14,6 +14,12 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true,
+        select: false
+    },
 
     // Restrict accounts to supported roles and default new accounts to a mom role.
     role: {
@@ -25,7 +31,9 @@ const userSchema = new mongoose.Schema({
     // Store the password hash required to authenticate the account.
     password: {
         type: String,
-        required: true
+        required: function () {
+            return !this.googleId;
+        }
     },
 
     // Optionally point to the user's currently selected pregnancy and child.
